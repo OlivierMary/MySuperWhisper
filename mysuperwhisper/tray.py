@@ -172,11 +172,15 @@ def _on_toggle_test(icon, item):
     """Toggle microphone test mode."""
     if audio.is_testing_mic():
         audio.stop_mic_test()
+        # Wait for worker thread to finish so it doesn't overwrite our idle state
+        if audio._test_thread and audio._test_thread.is_alive():
+            audio._test_thread.join(timeout=1.0)
         update_tray("idle")
     else:
         def _update_ui(level):
-            update_tray("testing", level)
-            
+            if audio.is_testing_mic():
+                update_tray("testing", level)
+
         audio.start_mic_test(_update_ui)
 
 
