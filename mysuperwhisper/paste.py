@@ -7,7 +7,7 @@ import os
 import subprocess
 import time
 import pyperclip
-from .config import log
+from .config import log, config
 
 
 def detect_session_type():
@@ -90,7 +90,15 @@ def paste_text(text, press_enter=False):
 
 def _paste_clipboard(text, session_type, force_ctrl_shift_v=False):
     """Paste text using clipboard (Ctrl+V or Ctrl+Shift+V)."""
-    # Copy to clipboard
+    # 1. Save old content if enabled
+    old_content = None
+    if config.restore_clipboard:
+        try:
+            old_content = pyperclip.paste()
+        except:
+            pass
+
+    # 2. Copy new text to clipboard
     pyperclip.copy(text)
     time.sleep(0.05)  # Slightly increased delay for reliability
 
@@ -109,6 +117,16 @@ def _paste_clipboard(text, session_type, force_ctrl_shift_v=False):
             
     except FileNotFoundError as e:
         log(f"Paste tool not found: {e}", "error")
+
+    # 3. Restore old content if enabled
+    if config.restore_clipboard and old_content is not None:
+        # Give the target application time to process the system paste event
+        # before we overwrite the clipboard again.
+        time.sleep(0.15)
+        try:
+            pyperclip.copy(old_content)
+        except:
+            pass
 
 
 def _paste_with_newlines(text, session_type):

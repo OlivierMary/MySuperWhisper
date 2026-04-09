@@ -70,6 +70,7 @@ class Config:
         self.sound_notifications_enabled = True
         self.input_device = None
         self.output_device = None
+        self.restore_clipboard = True
 
         # Hotkey configuration
         self.record_hotkey = "ctrl_l"  # Key for recording: "ctrl_l", "alt_r", "ctrl_r", etc.
@@ -92,6 +93,7 @@ class Config:
                 self.sound_notifications_enabled = data.get("sound_notifications_enabled", True)
                 self.input_device = data.get("input_device")
                 self.output_device = data.get("output_device")
+                self.restore_clipboard = data.get("restore_clipboard", True)
 
                 # Hotkey configuration
                 self.record_hotkey = data.get("record_hotkey", "ctrl_l")
@@ -106,7 +108,8 @@ class Config:
 
                 # Check if new fields are missing (for config migration)
                 if ("language" not in data or "task" not in data or
-                    "record_hotkey" not in data or "record_press_count" not in data):
+                    "record_hotkey" not in data or "record_press_count" not in data or
+                    "restore_clipboard" not in data):
                     log("Updating config file with new fields")
                     needs_save = True
             else:
@@ -134,7 +137,8 @@ class Config:
                 "record_hotkey": self.record_hotkey,
                 "record_press_count": self.record_press_count,
                 "history_hotkey": self.history_hotkey,
-                "history_press_count": self.history_press_count
+                "history_press_count": self.history_press_count,
+                "restore_clipboard": self.restore_clipboard
             }
 
             with open(CONFIG_FILE, 'w') as f:

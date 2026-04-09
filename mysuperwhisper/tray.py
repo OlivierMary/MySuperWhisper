@@ -200,6 +200,14 @@ def _on_toggle_sound_notifications(icon, item):
     log(f"Sound notifications: {'enabled' if config.sound_notifications_enabled else 'disabled'}")
 
 
+def _on_toggle_restore_clipboard(icon, item):
+    """Toggle clipboard restoration."""
+    config.restore_clipboard = not config.restore_clipboard
+    if _save_config_callback:
+        _save_config_callback()
+    log(f"Restore clipboard: {'enabled' if config.restore_clipboard else 'disabled'}")
+
+
 def _on_show_history(icon, item):
     """Open history popup."""
     from . import history
@@ -721,6 +729,11 @@ def _create_menu():
             "Sound notifications",
             _on_toggle_sound_notifications,
             checked=lambda item: config.sound_notifications_enabled
+        ),
+        pystray.MenuItem(
+            "Restore clipboard after paste",
+            _on_toggle_restore_clipboard,
+            checked=lambda item: config.restore_clipboard
         ),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("⌨️ Keyboard Shortcuts", hotkeys_menu),
