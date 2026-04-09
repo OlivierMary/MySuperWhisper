@@ -42,9 +42,10 @@ def _is_terminal(session_type):
             return False
 
         # Check for terminal keywords
-        # Common classes: gnome-terminal, xterm, kitty, alacritty, konsole...
+        # Common classes: gnome-terminal, xterm, kitty, alacritty, konsole, warp, wezterm...
         class_info = result_prop.stdout.lower()
-        return "term" in class_info or "console" in class_info or "kitty" in class_info
+        term_keywords = ["term", "console", "kitty", "warp", "alacritty", "wezterm", "st", "hyper"]
+        return any(k in class_info for k in term_keywords)
 
     except (FileNotFoundError, subprocess.SubprocessError, OSError):
         # Tools not installed or other error -> assume not terminal
