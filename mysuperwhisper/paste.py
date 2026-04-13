@@ -89,45 +89,90 @@ def paste_text(text, press_enter=False):
         _press_key("Return", session_type)
 
 
+def _get_clipboard_backup(session_type):
+    """Save current clipboard content for later restore.
+
+    Text uses pyperclip: a direct `xclip -o -t utf8_string` can return empty
+    bytes after an earlier `pyperclip.copy` in the same process (xclip daemon
+    ownership quirk), which would clobber the clipboard on restore. Binary
+    still goes through the native tool since pyperclip is text-only.
+    """
+    try:
+        text = pyperclip.paste()
+    except (UnicodeDecodeError, pyperclip.PyperclipException):
+        # Clipboard holds non-text bytes (e.g. PNG) — fall through to binary.
+        text = None
+    if text:
+        return text, "text"
+
+    try:
+        if session_type == "wayland":
+            res = subprocess.run(["wl-paste", "--list-types"], capture_output=True, text=True, timeout=1.0)
+            if res.returncode != 0 or not res.stdout.strip():
+                return None, None
+            available = [t.strip() for t in res.stdout.splitlines() if t.strip()]
+            binary_mime = next(
+                (t for t in available if not t.startswith("text/") and t.lower() != "utf8_string"),
+                None,
+            )
+            if not binary_mime:
+                return None, None
+            res_data = subprocess.run(["wl-paste", "--type", binary_mime], capture_output=True, timeout=2.0)
+        else:
+            res = subprocess.run(["xclip", "-selection", "clipboard", "-o", "-t", "TARGETS"], capture_output=True, text=True, timeout=1.0)
+            if res.returncode != 0 or "image/png" not in res.stdout.lower():
+                return None, None
+            binary_mime = "image/png"
+            res_data = subprocess.run(["xclip", "-selection", "clipboard", "-o", "-t", "image/png"], capture_output=True, timeout=2.0)
+
+        if res_data.returncode != 0 or not res_data.stdout:
+            return None, None
+        return res_data.stdout, binary_mime
+    except (FileNotFoundError, subprocess.SubprocessError, OSError):
+        return None, None
+
+
+def _restore_clipboard_backup(data, mime_type, session_type):
+    """Restore saved clipboard content."""
+    if not data or not mime_type:
+        return
+    try:
+        if mime_type == "text":
+            pyperclip.copy(data)
+            return
+        if session_type == "wayland":
+            subprocess.run(["wl-copy", "--type", mime_type], input=data, timeout=2.0)
+        else:
+            subprocess.run(["xclip", "-selection", "clipboard", "-t", mime_type], input=data, timeout=2.0)
+    except (FileNotFoundError, subprocess.SubprocessError, TimeoutError, OSError):
+        pass
+
+
 def _paste_clipboard(text, session_type, force_ctrl_shift_v=False):
     """Paste text using clipboard (Ctrl+V or Ctrl+Shift+V)."""
-    # 1. Save old content if enabled
-    old_content = None
+    old_data, old_mime = None, None
     if config.restore_clipboard:
-        try:
-            old_content = pyperclip.paste()
-        except:
-            pass
+        old_data, old_mime = _get_clipboard_backup(session_type)
 
-    # 2. Copy new text to clipboard
     pyperclip.copy(text)
-    time.sleep(0.05)  # Slightly increased delay for reliability
+    time.sleep(0.05)
 
     try:
         if session_type == "wayland":
             if force_ctrl_shift_v:
-                # Ctrl+Shift+V on Wayland
                 subprocess.run(["wtype", "-M", "ctrl", "-M", "shift", "-k", "v", "-m", "shift", "-m", "ctrl"])
             else:
-                # Ctrl+V on Wayland
                 subprocess.run(["wtype", "-M", "ctrl", "-k", "v", "-m", "ctrl"])
         else:
             key_combo = "ctrl+shift+v" if force_ctrl_shift_v else "ctrl+v"
-            # X11
             subprocess.run(["xdotool", "key", "--clearmodifiers", key_combo])
-            
     except FileNotFoundError as e:
         log(f"Paste tool not found: {e}", "error")
 
-    # 3. Restore old content if enabled
-    if config.restore_clipboard and old_content is not None:
-        # Give the target application time to process the system paste event
-        # before we overwrite the clipboard again.
+    if config.restore_clipboard and old_data:
+        # Let the target consume the paste event before we overwrite the clipboard.
         time.sleep(0.15)
-        try:
-            pyperclip.copy(old_content)
-        except:
-            pass
+        _restore_clipboard_backup(old_data, old_mime, session_type)
 
 
 def _paste_with_newlines(text, session_type):
