@@ -5,3 +5,4 @@ pynput
 pystray
 Pillow>=12.1.1
 pyperclip
+PyGObject

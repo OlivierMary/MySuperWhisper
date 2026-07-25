@@ -23,14 +23,24 @@ Author: Olivier Mary
 License: MIT
 """
 
-import sys
-# Hack to access system PyGObject (gi) from venv for AppIndicator support
-sys.path.append('/usr/lib/python3/dist-packages')
-
 import argparse
 import os
 import queue
+import sys
 import threading
+
+# Prefer AppIndicator so the tray icon appears in GNOME's top bar on Ubuntu
+# (ubuntu-appindicators / AyatanaAppIndicator3).
+#
+# The previous approach appended /usr/lib/python3/dist-packages to reuse the
+# system `gi` module. That breaks when the venv Python ABI does not match the
+# distro PyGObject build (e.g. a Python 3.13 venv on Ubuntu 24.04, which ships
+# python3-gi for 3.12 only). In that case pystray falls back to the Xorg
+# backend and the top-bar icon is missing or non-functional.
+#
+# Install PyGObject into the venv instead (see requirements.txt / install.sh).
+# Tested on Ubuntu 24.04.4 LTS (noble) with GNOME + ubuntu-appindicators.
+os.environ.setdefault("PYSTRAY_BACKEND", "appindicator")
 
 from .config import log, config, LOG_FILE, CONFIG_DIR
 from . import audio

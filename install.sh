@@ -66,8 +66,10 @@ install_system_deps() {
             DEPS="$DEPS python3-tk"
             # Audio
             DEPS="$DEPS portaudio19-dev libsndfile1"
-            # GTK/Tray
-            DEPS="$DEPS python3-gi gir1.2-ayatanaappindicator3-0.1 libgirepository1.0-dev"
+            # GTK/Tray (python3-gi for distro Python; -dev + cairo for pip PyGObject
+            # when the venv Python ABI does not match system gi, e.g. Python 3.13)
+            DEPS="$DEPS python3-gi gir1.2-ayatanaappindicator3-0.1"
+            DEPS="$DEPS libgirepository1.0-dev libgirepository-2.0-dev libcairo2-dev"
             # Clipboard
             DEPS="$DEPS xclip xsel"
             # Typing tool selon la session
