@@ -277,6 +277,12 @@ MySuperWhisper/
 - If you recently updated your NVIDIA drivers, the app might fallback to CPU mode or fail to load the model.
 - **Solution:** Restart your computer to ensure the new drivers are correctly loaded.
 
+### Tray icon missing on Ubuntu / GNOME
+- Ensure AppIndicator support is available (`gir1.2-ayatanaappindicator3-0.1` and the Ubuntu AppIndicators GNOME extension).
+- If you use a **non-distro Python** in the venv (for example Python 3.13 on Ubuntu 24.04), install `PyGObject` into that venv instead of relying on system `python3-gi` — the ABIs must match.
+- The app sets `PYSTRAY_BACKEND=appindicator` so pystray uses Ayatana AppIndicator rather than the Xorg fallback.
+- Verified on **Ubuntu 24.04.4 LTS (noble)**.
+
 ### Text not typed in some applications
 - Some applications may not accept simulated keyboard input
 - **Workaround:** The transcribed text is **always copied to your clipboard**. If automated typing fails, you can simply paste it manually (Ctrl+V).
@@ -294,6 +300,7 @@ MySuperWhisper uses these excellent open-source projects:
 | [faster-whisper](https://github.com/guillaumekln/faster-whisper) | Whisper implementation | MIT |
 | [pynput](https://github.com/moses-palmer/pynput) | Keyboard monitoring | LGPL-3.0 |
 | [pystray](https://github.com/moses-palmer/pystray) | System tray | LGPL-3.0 |
+| [PyGObject](https://pygobject.gnome.org/) | AppIndicator / GObject bindings for the tray | LGPL-2.1+ |
 | [sounddevice](https://python-sounddevice.readthedocs.io/) | Audio capture | MIT |
 | [numpy](https://numpy.org/) | Numerical processing | BSD |
 | [Pillow](https://pillow.readthedocs.io/) | Image processing | HPND |
